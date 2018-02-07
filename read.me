@@ -1,6 +1,5 @@
 Nodejs 应用简单的访问Mongodb 部署至Docker
 
-
 1.本地简单的写能运行起来的一个nodejs (demo可写的更简单 一个post一个get即可)
 
 schemas  user.js
@@ -140,3 +139,19 @@ docker run -it -p 3000:3000 --name nodejsdemo --link=mongodb:mongodb nodejsdemo
 
 
 浏览器访问 192.168.99.100:3000
+
+-------
+
+yaml 部署的方式
+
+nodejsdemo:
+  image: daocloud.io/yzq627/nodejsdemo:master-e0af672
+  links:
+  - mongodb:mongodb
+  ports:
+  - 32775:3000
+  restart: always
+mongodb:
+  image: mongo
+  restart: always
+
