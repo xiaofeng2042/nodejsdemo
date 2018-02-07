@@ -1,0 +1,142 @@
+Nodejs 应用简单的访问Mongodb 部署至Docker
+
+
+1.本地简单的写能运行起来的一个nodejs (demo可写的更简单 一个post一个get即可)
+
+schemas  user.js
+
+
+var mongoose = require('mongoose')
+ 
+var UserSchema = new mongoose.Schema({
+    name:{
+        unique:true,
+        type:String
+    },
+    password:{
+        type:String
+    },
+    //0  1  2  3  4
+    role:{
+        type:Number,
+        default:5
+    }
+})
+UserSchema.statics = {
+    fetch:function(cb){
+        return this.find({})
+        .exec(cb)
+    },
+    findById:function(id,cb){
+        return this.findOne({_id:id}).exec(cb)
+    }
+}
+module.exports = UserSchema
+
+-----
+model user.js　　
+-----
+
+var mongoose = require('mongoose')
+ 
+var UserSchema = require('../schemas/user')
+ 
+var User = mongoose.model('User',UserSchema);
+ 
+module.exports = User;
+
+----
+controller user.js
+----
+
+var User = require('../model/user')
+ 
+exports.list = function(req,res){
+    User.fetch(function(err,users){
+        if(err) {console.log(err)}
+        res.send(users);
+    })
+}
+exports.save = function(req,res){
+    console.log(req.query.name);
+    var name = req.query.name || 'noname';
+    var password = 'abcdefg';
+    var user = new User({"name":name,"password":"123456"})
+     
+    user.save(function(err){
+        if(err)
+        {
+            console.log('false');
+            res.send("fails");
+            return;
+        }
+        res.redirect('/');
+    })
+}
+ 
+
+----
+app.js
+----
+
+var express = require('express');
+var router = express.Router();
+var mongoose = require('mongoose')
+ 
+//var dbURL = 'mongodb://localhost:27017/imooc';
+var dbURL = 'mongodb://mongodb/imooc';//mongodb这个名字是 在--link=aaa:bbb时的名字 即bbb
+mongoose.connect(dbURL);
+ 
+var app = express();
+ 
+app.listen(3000,function(){
+    console.log("server start. Listen port:3000");
+});
+ 
+require('./router/router')(app)
+　　
+-----
+router.js
+-----
+
+var User = require('../app/controller/user')
+ 
+var _ = require('underscore')
+ 
+module.exports = function(app){
+    app.get('/',User.list)
+    app.get('/user',User.save);
+}
+　　确保本地能够正常运行。
+
+2.在app.js文件目录编写dockerfile
+
+FROM node
+ 
+COPY . /home/src
+ 
+RUN cd /home/src; npm install
+ 
+EXPOSE 3000
+ 
+CMD ["node","/home/src/app.js"]
+　
+
+4.docker pull mongo 
+
+5.docker run -it --name mongodb mongo  进入终端
+
+cd /home
+mkdir db
+mongod --dbpath='/home/db'
+启动mongodb服务
+ 
+
+6.docker build -t nodejsdemo .
+
+docker run -it -p 3000:3000 --name nodejsdemo --link=mongodb:mongodb nodejsdemo
+
+此时控制台可以看到 server start Listen port:3000
+
+
+浏览器访问 192.168.99.100:3000
